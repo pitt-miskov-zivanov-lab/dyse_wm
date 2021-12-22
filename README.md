@@ -95,16 +95,6 @@ ___
             - `examples/example_model_edges*.xlsx`
     
 ---
-## Filtration
-
-### Functionality
-- Filtering reading output against other information sources and databases
-- TODO: Filtration README
-- TODO: document Emilee's STRING filtering
-
-### I/O
-- TODO: add example files
----
 ## Simulation
 
 ### Functionality
