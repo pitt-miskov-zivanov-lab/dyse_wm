@@ -1,0 +1,308 @@
+egg_productivity = (bird_condition_healthy, egg_productivity)
+degg_productivity / dbird_condition_healthy
+bird_condition_healthy egg_productivity  influ_or_not   value
+-influence 0.025225
+
+health_intensive_care = (health_intensive_care)
+egg_consumption = (egg_production, egg_consumption)
+degg_consumption / degg_production
+egg_production egg_consumption  influ_or_not   value
+-influence 0.025411666666666666
+
+fuel_emissions = (poultry_feed, fuel_emissions)
+dfuel_emissions / dpoultry_feed
+poultry_feed fuel_emissions  influ_or_not   value
+-influence 0.025861666666666665
+
+economy = (indigenous_breeds, poultry, economy)
+deconomy / dindigenous_breeds
+indigenous_breeds poultry economy  influ_or_not   value
+-influence 0.026715
+
+deconomy / dpoultry
+indigenous_breeds poultry economy  influ_or_not   value
+-influence 0.026715
+
+bird_condition_healthy = (poultry_management, vaccination, bird_condition_healthy)
+dbird_condition_healthy / dpoultry_management
+poultry_management vaccination bird_condition_healthy  influ_or_not   value
+-influence 0.03059
+
+dbird_condition_healthy / dvaccination
+poultry_management vaccination bird_condition_healthy  influ_or_not   value
+-influence 0.03059
+
+poultry_management = (economy, poultry_management)
+dpoultry_management / deconomy
+economy poultry_management  influ_or_not   value
+-influence 0.025325
+
+feed_marketing = (poultry_feed_price_or_cost, feed_marketing)
+dfeed_marketing / dpoultry_feed_price_or_cost
+poultry_feed_price_or_cost feed_marketing  influ_or_not   value
+0,1  1   0.03333
+0,2  1   0.03333
+-influence 0.032363333333333334
+
+vaccination = (higher_temperatures, vaccination_production, vaccination_unavailability, vaccination)
+dvaccination / dhigher_temperatures
+higher_temperatures vaccination_production vaccination_unavailability vaccination  influ_or_not   value
+-influence 0.03333333333333333
+
+dvaccination / dvaccination_production
+higher_temperatures vaccination_production vaccination_unavailability vaccination  influ_or_not   value
+-influence 0.03333333333333333
+
+dvaccination / dvaccination_unavailability
+higher_temperatures vaccination_production vaccination_unavailability vaccination  influ_or_not   value
+-influence 0.03333333333333333
+
+household_income = (income, household_income)
+dhousehold_income / dincome
+income household_income  influ_or_not   value
+-influence 0.025168333333333334
+
+income = (egg_marketing, nutrition_security, poultry_marketing, income)
+dincome / degg_marketing
+egg_marketing nutrition_security poultry_marketing income  influ_or_not   value
+-influence 0.028163333333333332
+
+dincome / dnutrition_security
+egg_marketing nutrition_security poultry_marketing income  influ_or_not   value
+-influence 0.028163333333333332
+
+dincome / dpoultry_marketing
+egg_marketing nutrition_security poultry_marketing income  influ_or_not   value
+-influence 0.028163333333333332
+
+crop_production = (crop_production)
+higher_temperatures = (higher_temperatures)
+poultry_feed_price_or_cost = (crop_production, feed_production, poultry_feed_price_or_cost)
+dpoultry_feed_price_or_cost / dcrop_production
+crop_production feed_production poultry_feed_price_or_cost  influ_or_not   value
+-influence 0.03333333333333333
+
+dpoultry_feed_price_or_cost / dfeed_production
+crop_production feed_production poultry_feed_price_or_cost  influ_or_not   value
+-influence 0.03333333333333333
+
+poultry_flock_size = (poultry_death, poultry_feed, poultry_feed_price_or_cost, vaccination, poultry_flock_size)
+dpoultry_flock_size / dpoultry_death
+poultry_death poultry_feed poultry_feed_price_or_cost vaccination poultry_flock_size  influ_or_not   value
+0,30,0,30,30  1   0.03333
+-influence 0.033161666666666666
+
+dpoultry_flock_size / dpoultry_feed
+poultry_death poultry_feed poultry_feed_price_or_cost vaccination poultry_flock_size  influ_or_not   value
+0,30,0,30,30  1   0.03333
+-influence 0.033161666666666666
+
+dpoultry_flock_size / dpoultry_feed_price_or_cost
+poultry_death poultry_feed poultry_feed_price_or_cost vaccination poultry_flock_size  influ_or_not   value
+0,30,0,30,0  1   0.03333
+-influence 0.032785
+
+dpoultry_flock_size / dvaccination
+poultry_death poultry_feed poultry_feed_price_or_cost vaccination poultry_flock_size  influ_or_not   value
+0,30,0,30,0  1   0.03333
+-influence 0.032785
+
+feed_production = (crop_production, feed_production)
+dfeed_production / dcrop_production
+crop_production feed_production  influ_or_not   value
+-influence 0.03333333333333333
+
+nutrition_security = (egg_consumption, household_income, income, indigenous_breeds, poultry_consumption, nutrition_security)
+dnutrition_security / degg_consumption
+egg_consumption household_income income indigenous_breeds poultry_consumption nutrition_security  influ_or_not   value
+-influence 0.029109999999999997
+
+dnutrition_security / dhousehold_income
+egg_consumption household_income income indigenous_breeds poultry_consumption nutrition_security  influ_or_not   value
+-influence 0.029109999999999997
+
+dnutrition_security / dincome
+egg_consumption household_income income indigenous_breeds poultry_consumption nutrition_security  influ_or_not   value
+-influence 0.029109999999999997
+
+dnutrition_security / dindigenous_breeds
+egg_consumption household_income income indigenous_breeds poultry_consumption nutrition_security  influ_or_not   value
+-influence 0.029109999999999997
+
+dnutrition_security / dpoultry_consumption
+egg_consumption household_income income indigenous_breeds poultry_consumption nutrition_security  influ_or_not   value
+-influence 0.029109999999999997
+
+poultry_death = (agriculture_training, bird_condition_healthy, health_intensive_care, poultry_management, vaccination, poultry_death)
+dpoultry_death / dagriculture_training
+agriculture_training bird_condition_healthy health_intensive_care poultry_management vaccination poultry_death  influ_or_not   value
+-influence 0.03333333333333333
+
+dpoultry_death / dbird_condition_healthy
+agriculture_training bird_condition_healthy health_intensive_care poultry_management vaccination poultry_death  influ_or_not   value
+-influence 0.03333333333333333
+
+dpoultry_death / dhealth_intensive_care
+agriculture_training bird_condition_healthy health_intensive_care poultry_management vaccination poultry_death  influ_or_not   value
+-influence 0.03333333333333333
+
+dpoultry_death / dpoultry_management
+agriculture_training bird_condition_healthy health_intensive_care poultry_management vaccination poultry_death  influ_or_not   value
+-influence 0.03333333333333333
+
+dpoultry_death / dvaccination
+agriculture_training bird_condition_healthy health_intensive_care poultry_management vaccination poultry_death  influ_or_not   value
+-influence 0.03333333333333333
+
+poultry_feed = (feed_marketing, feed_production, income, poultry_feed_price_or_cost, poultry_feed)
+dpoultry_feed / dfeed_marketing
+feed_marketing feed_production income poultry_feed_price_or_cost poultry_feed  influ_or_not   value
+-influence 0.03280833333333333
+
+dpoultry_feed / dfeed_production
+feed_marketing feed_production income poultry_feed_price_or_cost poultry_feed  influ_or_not   value
+-influence 0.03280833333333333
+
+dpoultry_feed / dincome
+feed_marketing feed_production income poultry_feed_price_or_cost poultry_feed  influ_or_not   value
+-influence 0.03280833333333333
+
+dpoultry_feed / dpoultry_feed_price_or_cost
+feed_marketing feed_production income poultry_feed_price_or_cost poultry_feed  influ_or_not   value
+-influence 0.03280833333333333
+
+egg_production = (poultry_feed, poultry_feed_price_or_cost, poultry_flock_size, poultry_productivity, egg_production)
+degg_production / dpoultry_feed
+poultry_feed poultry_feed_price_or_cost poultry_flock_size poultry_productivity egg_production  influ_or_not   value
+-influence 0.030665
+
+degg_production / dpoultry_feed_price_or_cost
+poultry_feed poultry_feed_price_or_cost poultry_flock_size poultry_productivity egg_production  influ_or_not   value
+-influence 0.030665
+
+degg_production / dpoultry_flock_size
+poultry_feed poultry_feed_price_or_cost poultry_flock_size poultry_productivity egg_production  influ_or_not   value
+-influence 0.030665
+
+degg_production / dpoultry_productivity
+poultry_feed poultry_feed_price_or_cost poultry_flock_size poultry_productivity egg_production  influ_or_not   value
+-influence 0.030665
+
+vaccination_unavailability = (vaccination_production, vaccination_unavailability)
+dvaccination_unavailability / dvaccination_production
+vaccination_production vaccination_unavailability  influ_or_not   value
+-influence 0.03333333333333333
+
+vaccination_production = (vaccination_production)
+agriculture_training = (agriculture_training)
+poultry_productivity = (indigenous_breeds, poultry_feed, poultry_productivity)
+dpoultry_productivity / dindigenous_breeds
+indigenous_breeds poultry_feed poultry_productivity  influ_or_not   value
+-influence 0.027003333333333334
+
+dpoultry_productivity / dpoultry_feed
+indigenous_breeds poultry_feed poultry_productivity  influ_or_not   value
+-influence 0.027003333333333334
+
+indigenous_breeds = (household_income, income, indigenous_breeds)
+dindigenous_breeds / dhousehold_income
+household_income income indigenous_breeds  influ_or_not   value
+-influence 0.026651666666666667
+
+dindigenous_breeds / dincome
+household_income income indigenous_breeds  influ_or_not   value
+-influence 0.026651666666666667
+
+purchasing_power = (purchasing_power)
+poultry_meat_availability = (poultry_meat_availability)
+poultry_slaughterhouse = (poultry_slaughterhouse)
+poultry_consumption = (egg_marketing, poultry_marketing, poultry_meat_availability, poultry_price_or_cost, purchasing_power, quality, poultry_consumption)
+dpoultry_consumption / degg_marketing
+egg_marketing poultry_marketing poultry_meat_availability poultry_price_or_cost purchasing_power quality poultry_consumption  influ_or_not   value
+-influence 0.03333333333333333
+
+dpoultry_consumption / dpoultry_marketing
+egg_marketing poultry_marketing poultry_meat_availability poultry_price_or_cost purchasing_power quality poultry_consumption  influ_or_not   value
+-influence 0.03333333333333333
+
+dpoultry_consumption / dpoultry_meat_availability
+egg_marketing poultry_marketing poultry_meat_availability poultry_price_or_cost purchasing_power quality poultry_consumption  influ_or_not   value
+-influence 0.03333333333333333
+
+dpoultry_consumption / dpoultry_price_or_cost
+egg_marketing poultry_marketing poultry_meat_availability poultry_price_or_cost purchasing_power quality poultry_consumption  influ_or_not   value
+-influence 0.03333333333333333
+
+dpoultry_consumption / dpurchasing_power
+egg_marketing poultry_marketing poultry_meat_availability poultry_price_or_cost purchasing_power quality poultry_consumption  influ_or_not   value
+-influence 0.03333333333333333
+
+dpoultry_consumption / dquality
+egg_marketing poultry_marketing poultry_meat_availability poultry_price_or_cost purchasing_power quality poultry_consumption  influ_or_not   value
+-influence 0.03333333333333333
+
+marketing_information = (marketing_information)
+location = (location)
+small_farmers_person_or_group = (small_farmers_person_or_group)
+quality = (purchasing_power, quality)
+dquality / dpurchasing_power
+purchasing_power quality  influ_or_not   value
+-influence 0.03333333333333333
+
+poultry_price_or_cost = (poultry_consumption, poultry_price_or_cost)
+dpoultry_price_or_cost / dpoultry_consumption
+poultry_consumption poultry_price_or_cost  influ_or_not   value
+-influence 0.025173333333333332
+
+poultry_marketing = (location, marketing_information, poultry_price_or_cost, poultry_production, poultry_slaughterhouse, purchasing_power, quality, small_farmers_person_or_group, poultry_marketing)
+dpoultry_marketing / dlocation
+-influence 0.03333333333333333
+
+dpoultry_marketing / dmarketing_information
+-influence 0.03333333333333333
+
+dpoultry_marketing / dpoultry_price_or_cost
+-influence 0.03333333333333333
+
+dpoultry_marketing / dpoultry_production
+-influence 0.03333333333333333
+
+dpoultry_marketing / dpoultry_slaughterhouse
+-influence 0.03333333333333333
+
+dpoultry_marketing / dpurchasing_power
+-influence 0.03333333333333333
+
+dpoultry_marketing / dquality
+-influence 0.03333333333333333
+
+dpoultry_marketing / dsmall_farmers_person_or_group
+-influence 0.03333333333333333
+
+egg_marketing = (egg_production, location, marketing_information, poultry_production, egg_marketing)
+degg_marketing / degg_production
+egg_production location marketing_information poultry_production egg_marketing  influ_or_not   value
+-influence 0.03333333333333333
+
+degg_marketing / dlocation
+egg_production location marketing_information poultry_production egg_marketing  influ_or_not   value
+-influence 0.03333333333333333
+
+degg_marketing / dmarketing_information
+egg_production location marketing_information poultry_production egg_marketing  influ_or_not   value
+-influence 0.03333333333333333
+
+degg_marketing / dpoultry_production
+egg_production location marketing_information poultry_production egg_marketing  influ_or_not   value
+-influence 0.03333333333333333
+
+poultry_production = (poultry_productivity, poultry_production)
+dpoultry_production / dpoultry_productivity
+poultry_productivity poultry_production  influ_or_not   value
+-influence 0.025621666666666668
+
+poultry = (poultry_marketing, poultry)
+dpoultry / dpoultry_marketing
+poultry_marketing poultry  influ_or_not   value
+-influence 0.025615
+

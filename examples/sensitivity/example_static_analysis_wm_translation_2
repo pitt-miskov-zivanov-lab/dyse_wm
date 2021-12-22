@@ -1,0 +1,242 @@
+egg_productivity = (bird_condition_healthy, egg_productivity)
+degg_productivity / dbird_condition_healthy
+-influence 0.03333333333333333
+
+health_intensive_care = (health_intensive_care)
+egg_consumption = (egg_production, egg_consumption)
+degg_consumption / degg_production
+-influence 0.03333333333333333
+
+fuel_emissions = (poultry_feed, fuel_emissions)
+dfuel_emissions / dpoultry_feed
+-influence 0.03333333333333333
+
+economy = (indigenous_breeds, poultry, economy)
+deconomy / dindigenous_breeds
+-influence 0.03333333333333333
+
+deconomy / dpoultry
+-influence 0.03333333333333333
+
+bird_condition_healthy = (poultry_management, vaccination, bird_condition_healthy)
+dbird_condition_healthy / dpoultry_management
+-influence 0.03333333333333333
+
+dbird_condition_healthy / dvaccination
+-influence 0.03333333333333333
+
+poultry_management = (economy, poultry_management)
+dpoultry_management / deconomy
+-influence 0.03333333333333333
+
+feed_marketing = (poultry_feed_price_or_cost, feed_marketing)
+dfeed_marketing / dpoultry_feed_price_or_cost
+-influence 0.03333333333333333
+
+vaccination = (higher_temperatures, vaccination_production, vaccination_unavailability, vaccination)
+dvaccination / dhigher_temperatures
+-influence 0.03333333333333333
+
+dvaccination / dvaccination_production
+-influence 0.03333333333333333
+
+dvaccination / dvaccination_unavailability
+-influence 0.03333333333333333
+
+household_income = (income, household_income)
+dhousehold_income / dincome
+-influence 0.03333333333333333
+
+income = (egg_marketing, nutrition_security, poultry_marketing, income)
+dincome / degg_marketing
+-influence 0.03333333333333333
+
+dincome / dnutrition_security
+-influence 0.03333333333333333
+
+dincome / dpoultry_marketing
+-influence 0.03333333333333333
+
+crop_production = (crop_production)
+higher_temperatures = (higher_temperatures)
+poultry_feed_price_or_cost = (crop_production, feed_production, poultry_feed_price_or_cost)
+dpoultry_feed_price_or_cost / dcrop_production
+-influence 0.03333333333333333
+
+dpoultry_feed_price_or_cost / dfeed_production
+-influence 0.03333333333333333
+
+poultry_flock_size = (poultry_death, poultry_feed, poultry_feed_price_or_cost, vaccination, poultry_flock_size)
+dpoultry_flock_size / dpoultry_death
+-influence 0.03333333333333333
+
+dpoultry_flock_size / dpoultry_feed
+-influence 0.03333333333333333
+
+dpoultry_flock_size / dpoultry_feed_price_or_cost
+-influence 0.03333333333333333
+
+dpoultry_flock_size / dvaccination
+-influence 0.03333333333333333
+
+feed_production = (crop_production, feed_production)
+dfeed_production / dcrop_production
+-influence 0.03333333333333333
+
+nutrition_security = (egg_consumption, household_income, income, indigenous_breeds, poultry_consumption, nutrition_security)
+dnutrition_security / degg_consumption
+-influence 0.03333333333333333
+
+dnutrition_security / dhousehold_income
+-influence 0.03333333333333333
+
+dnutrition_security / dincome
+-influence 0.03333333333333333
+
+dnutrition_security / dindigenous_breeds
+-influence 0.03333333333333333
+
+dnutrition_security / dpoultry_consumption
+-influence 0.03333333333333333
+
+poultry_death = (agriculture_training, bird_condition_healthy, health_intensive_care, poultry_management, vaccination, poultry_death)
+dpoultry_death / dagriculture_training
+-influence 0.03333333333333333
+
+dpoultry_death / dbird_condition_healthy
+-influence 0.03333333333333333
+
+dpoultry_death / dhealth_intensive_care
+-influence 0.03333333333333333
+
+dpoultry_death / dpoultry_management
+-influence 0.03333333333333333
+
+dpoultry_death / dvaccination
+-influence 0.03333333333333333
+
+poultry_feed = (feed_marketing, feed_production, income, poultry_feed_price_or_cost, poultry_feed)
+dpoultry_feed / dfeed_marketing
+-influence 0.03333333333333333
+
+dpoultry_feed / dfeed_production
+-influence 0.03333333333333333
+
+dpoultry_feed / dincome
+-influence 0.03333333333333333
+
+dpoultry_feed / dpoultry_feed_price_or_cost
+-influence 0.03333333333333333
+
+egg_production = (poultry_feed, poultry_feed_price_or_cost, poultry_flock_size, poultry_productivity, egg_production)
+degg_production / dpoultry_feed
+-influence 0.03333333333333333
+
+degg_production / dpoultry_feed_price_or_cost
+-influence 0.03333333333333333
+
+degg_production / dpoultry_flock_size
+-influence 0.03333333333333333
+
+degg_production / dpoultry_productivity
+-influence 0.03333333333333333
+
+vaccination_unavailability = (vaccination_production, vaccination_unavailability)
+dvaccination_unavailability / dvaccination_production
+-influence 0.03333333333333333
+
+vaccination_production = (vaccination_production)
+agriculture_training = (agriculture_training)
+poultry_productivity = (indigenous_breeds, poultry_feed, poultry_productivity)
+dpoultry_productivity / dindigenous_breeds
+-influence 0.03333333333333333
+
+dpoultry_productivity / dpoultry_feed
+-influence 0.03333333333333333
+
+indigenous_breeds = (household_income, income, indigenous_breeds)
+dindigenous_breeds / dhousehold_income
+-influence 0.03333333333333333
+
+dindigenous_breeds / dincome
+-influence 0.03333333333333333
+
+purchasing_power = (purchasing_power)
+poultry_meat_availability = (poultry_meat_availability)
+poultry_slaughterhouse = (poultry_slaughterhouse)
+poultry_consumption = (egg_marketing, poultry_marketing, poultry_meat_availability, poultry_price_or_cost, purchasing_power, quality, poultry_consumption)
+dpoultry_consumption / degg_marketing
+-influence 0.03333333333333333
+
+dpoultry_consumption / dpoultry_marketing
+-influence 0.03333333333333333
+
+dpoultry_consumption / dpoultry_meat_availability
+-influence 0.03333333333333333
+
+dpoultry_consumption / dpoultry_price_or_cost
+-influence 0.03333333333333333
+
+dpoultry_consumption / dpurchasing_power
+-influence 0.03333333333333333
+
+dpoultry_consumption / dquality
+-influence 0.03333333333333333
+
+marketing_information = (marketing_information)
+location = (location)
+small_farmers_person_or_group = (small_farmers_person_or_group)
+quality = (purchasing_power, quality)
+dquality / dpurchasing_power
+-influence 0.03333333333333333
+
+poultry_price_or_cost = (poultry_consumption, poultry_price_or_cost)
+dpoultry_price_or_cost / dpoultry_consumption
+-influence 0.03333333333333333
+
+poultry_marketing = (location, marketing_information, poultry_price_or_cost, poultry_production, poultry_slaughterhouse, purchasing_power, quality, small_farmers_person_or_group, poultry_marketing)
+dpoultry_marketing / dlocation
+-influence 0.03333333333333333
+
+dpoultry_marketing / dmarketing_information
+-influence 0.03333333333333333
+
+dpoultry_marketing / dpoultry_price_or_cost
+-influence 0.03333333333333333
+
+dpoultry_marketing / dpoultry_production
+-influence 0.03333333333333333
+
+dpoultry_marketing / dpoultry_slaughterhouse
+-influence 0.03333333333333333
+
+dpoultry_marketing / dpurchasing_power
+-influence 0.03333333333333333
+
+dpoultry_marketing / dquality
+-influence 0.03333333333333333
+
+dpoultry_marketing / dsmall_farmers_person_or_group
+-influence 0.03333333333333333
+
+egg_marketing = (egg_production, location, marketing_information, poultry_production, egg_marketing)
+degg_marketing / degg_production
+-influence 0.03333333333333333
+
+degg_marketing / dlocation
+-influence 0.03333333333333333
+
+degg_marketing / dmarketing_information
+-influence 0.03333333333333333
+
+degg_marketing / dpoultry_production
+-influence 0.03333333333333333
+
+poultry_production = (poultry_productivity, poultry_production)
+dpoultry_production / dpoultry_productivity
+-influence 0.03333333333333333
+
+poultry = (poultry_marketing, poultry)
+dpoultry / dpoultry_marketing
+-influence 0.03333333333333333
+
