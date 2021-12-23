@@ -6,7 +6,7 @@ The Dynamic System Explanation (DySE) Framework contains tools for building, sim
 
 ## In this README
 
-This README contains installation instructions, description of the overall framework, and for each subpackage: functionality, TODOs, and input/output files. READMEs for each subpackage contain descriptions of each subpackage module. 
+This README contains installation instructions, description of the overall framework, and for each subpackage: functionality, and input/output files. READMEs for each subpackage contain descriptions of each subpackage module. 
 
 ## Setup
 
@@ -27,7 +27,7 @@ pip install -e .
     - Describes coding environment setup, coding guidelines, resources, etc.
 - `README.md`
     - (You Are Here)
-    - Describes general functionality of each module, input/output requirements, TODOs for bugs or improvements
+    - Describes general functionality of each module, input/output requirements
     - More detailed READMEs with usage are in each package within the framework
 - `setup.py`
     - local installation instructions
@@ -37,28 +37,6 @@ pip install -e .
 - Simulation/
 - Sensitivity/
 - Visualization/
-
-### Goal structure
-
-References: [python docs](http://docs.python-guide.org/en/latest/writing/structure/),
-[python packaging docs](http://python-packaging.readthedocs.io/en/latest/minimal.html),
-[app structuring with main files](https://chriswarrick.com/blog/2014/09/15/python-apps-the-right-way-entry_points-and-scripts/)
-
-- `CONTRIBUTING.md`
-- `README.md`
-- `LICENSE.txt`
-- `setup.py`
-- docs/
-- examples/
-- tests/
-- dyse/
-    - process/
-    - filter/
-    - classify/
-    - extend/
-    - analyze/
-    - visualize/
-- gui/
 
 ---
 ## Examples
@@ -220,21 +198,6 @@ ___
 
 - File Output: simulation traces (.txt) 
     - `examples/traces/example_traces*.txt`
-
-### Java/C Simulators (deprecated)
-- Older versions of the simulator, no longer maintained
-
-#### Functionality
-- These simulators simulate from a txt file of logic rules
-- NOTE: Rule creation is now integrated with the Python simulator, via `simulation_interface.py` (see `examples/` and the Python simulator `README`).
-- see [`Simulation/Simulator_Java/Readme`](Simulation/Simulator_Java/Readme) and [`Simulation/Simulator_C/README.txt`](Simulation/Simulator_C/README.txt)
-
-#### I/O
-- File Input: rule file (.txt) with initial conditions and update rules
-    - `examples/rules/example_rules*.txt`
-- File Output: trace file (.txt) with element values at each step across runs
-    - `examples/traces/example_traces*.txt`
-
 ---
 ## Sensitivity
 
