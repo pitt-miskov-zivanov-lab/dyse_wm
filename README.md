@@ -2,7 +2,7 @@
 
 ## Framework description
 
-The Dynamic System Explanation (DySE) Framework contains tools for building, simulating, and verifying qualitative models, built by the Mechanisms and Logic of Dynamics Lab at the University of Pittsburgh.
+The Dynamic System Explanation (DySE) Framework contains tools for building, simulating, and verifying qualitative models, built by the Mechanisms and Logic of Dynamics (MeLoDy) Lab at the University of Pittsburgh.
 
 ## In this README
 
@@ -238,6 +238,6 @@ ___
 ## History and Support
 The DySE framework development team is based in MeLoDy Lab led by Dr. Natasa Miskov-Zivanov, in the Electrical and Computer Engineering Department at the University of Pittsburgh. DySE was initially developed as part of AIMCancer (Automated Integration of Mechanisms in Cancer) project and later revised and extended as part of STORM (Standardized Technology for Optimizing Rapid Modeling) project.
 
-Since its initiation in 2014, many researchers and developers have contributed to DySE including Kara Bocan, Khaled Sayed, Stefan Andjelkovic, Gaoxiang Zhou, Yasmine Ahmed, Emilee Holtzapple, Casey Hansen, Yu-Hsin Kuo, Kai-Wen Liang, Cheryl Telmer, Natasa Miskov-Zivanov. 
+Since its initiation in 2014, many researchers and developers in MeLoDy Lab have contributed to DySE including Kara Bocan, Khaled Sayed, Stefan Andjelkovic, Gaoxiang Zhou, Yasmine Ahmed, Emilee Holtzapple, Casey Hansen, Yu-Hsin Kuo, Kai-Wen Liang, Cheryl Telmer, Natasa Miskov-Zivanov. 
 
 DySE development has been supported by DARPA Big Mechanism (AIMCancer, W911NF-17-1-0135) and World Modelers (STORM, W911NF-18-1-0017) program grants, and by the Department of Electrical and Computer Engineering at the University of Pittsburgh Swanson School of Engineering.
