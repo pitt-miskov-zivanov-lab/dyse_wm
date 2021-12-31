@@ -234,3 +234,6 @@ ___
 - File Output: .pdf or .png plots
     - `examples/plots/*`
 
+---
+## History and Support
+Your text
