@@ -427,6 +427,7 @@ def initialize_model(default_model:str,
 		discrete_array = np.ceil((data_array_reduced-lb)*levels/(ub-lb)) + bottom_padding
 		discrete_array = np.where(discrete_array>max_level, max_level, discrete_array)
 		discrete_array = np.where(discrete_array<0, 0, discrete_array)
+
 		
 
 		if element in CM_data.head_nodes:
@@ -454,7 +455,11 @@ def initialize_model(default_model:str,
 				toggle_string_list = ["{0}[{1}]".format(v,s) for s,v in sorted(toggle_pairs, key=lambda x: x[0])]
 			else:
 				toggle_string_list=[]
-			initial_string = ','.join([str(int(discrete_array[0]))]+toggle_string_list)
+			try:
+				starting_level = str(int(discrete_array[0]))
+			except:
+				starting_level = str(int(max_level//2))
+			initial_string = ','.join([starting_level]+toggle_string_list)
 			df_model.loc[i,scenario_vs_initial+' 0'] = initial_string
 
 	df_model.to_excel(output_model, index=False)
@@ -864,8 +869,8 @@ class CauseMosIndicators:
 								else None for k in model_dump['conceptIndicators']}
 
 			elif 'nodes' in model_dump:
-				for node in model_dump['nodes'].items():
-					if len(v['values'])==0:
+				for node in model_dump['nodes']:
+					if len(node['values'])==0:
 						hist_data[node['concept']] = {'values':None}
 						freq[node['concept']] = 'month'
 						hist_timeline[node['concept']] = None 
@@ -943,7 +948,17 @@ class CauseMosIndicators:
 													'resolution':node['resolution'],
 													'period':node['period'],
 													'minValue':node['minValue'],
-													'maxValue':node['maxValue']}}
+													'maxValue':node['maxValue']} \
+										for node in model_dump['nodes'] \
+										if 'concept' in node and \
+										'indicator' in node and \
+										'values' in node and \
+										'numLevels' in node and  \
+										'resolution' in node and \
+										'period' in node and \
+										'minValue' in node and \
+										'maxValue' in node \
+										}
 			else:
 				raise ValueError("Neither 'conceptIndicators', nor 'nodes' found in the model JSON.")
 
