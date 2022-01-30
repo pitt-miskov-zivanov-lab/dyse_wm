@@ -257,7 +257,8 @@ def initialize_model(default_model:str,
 					time_units:float=None,
 					visualize:bool=False, 
 					max_level:int=30,
-					scale_factor:float=1.):
+					scale_factor:float=1.,
+					sim_scheme:str='seq'):
 	"""This function takes a raw model, and sets initial values according to the historical data.
 
 	Inputs:
@@ -271,7 +272,9 @@ def initialize_model(default_model:str,
 	- visualize [bool]: flag for whether to visualize static baseline projections
 	- max_level [int]: default value of maximum discrete level
 	- scale_factor [float]: scales the number of simulation steps to tune temporal granularity
-							(default: 1.0)"""
+							(default: 1.0)
+	- sim_scheme [str]: simulation scheme, choice between 'seq' (sequential, random asynchronous) and 'sim'
+						(simultaneous), which defines updates ordering in simulation (default: 'seq')"""
 	# load the historical data
 	with open(model_json,'r') as jf:
 		dump = json.load(jf)
@@ -354,12 +357,21 @@ def initialize_model(default_model:str,
 												scale_factor=scale_factor )
 	if num_steps == 0:
 		num_steps = time_units
+
+	# Number of time steps during a single period between two consecutive time points 
+	# (e.g. if monthly resolution)
+	if sim_scheme=='seq':
+		cycle_length = num_steps//num_points
+	else:
+		cycle_length = 1
 	
-	projection_timesteps = [date2step(target_date=date_point.strftime('%Y-%m-%d'), 
-										start_date=projection_start,
-										end_date=projection_end,
-										num_steps=num_steps) \
-								for date_point in CM_data.joint_projection_timeline]
+	# projection_timesteps = [date2step(target_date=date_point.strftime('%Y-%m-%d'), 
+	# 									start_date=projection_start,
+	# 									end_date=projection_end,
+	# 									num_steps=num_steps) \
+	# 							for date_point in CM_data.joint_projection_timeline]
+
+	projection_timesteps = [i*cycle_length for i in range(len(CM_data.joint_projection_timeline)+1)]
 
 	# A dictionary for storing aggregated constraints for each element
 	cn_agg_means = dict()
@@ -403,7 +415,8 @@ def initialize_model(default_model:str,
 		
 		# aggregate data if resolution is too granular
 		timesteps_slice = projection_timesteps[:len(data_array)]
-		data_sliced = data_array[:len(projection_timesteps)]
+		#data_sliced = data_array[:len(projection_timesteps)]
+		data_sliced = data_array[:len(timesteps_slice)]
 
 		data_aggregation = {s:[] for s in set(timesteps_slice)}
 		for s,v in zip(timesteps_slice, data_sliced):
@@ -414,8 +427,8 @@ def initialize_model(default_model:str,
 			cn_agg = {j:[] for j in range(num_steps)}
 			if cnstr['concept']==element:
 				for c1 in cnstr['values']:
-					if c1['step']<num_steps:
-						cn_agg[c1['step']].append(c1['value'])
+					if c1['step']*cycle_length<num_steps:
+						cn_agg[c1['step']*cycle_length].append(c1['value'])
 			cn_agg_means[element] = {j:np.nanmean(v) for j,v in cn_agg.items() if len(v)>0}
 			for j, v in cn_agg_means[element].items():
 				data_means[j] = v
@@ -699,31 +712,52 @@ def create_model(model_json:str, model_name:str='model.xslx', infer_weights:bool
 											  x['Element IDs'].replace('/','___').replace(' ','__'), axis=1)
 	df_model['Variable'] = df_model['Element Name']
 	df_model.to_excel(model_name,index=False)
-	
+		
+	update_model(original_model=model_name, updated_model=model_name, edges=edges)
+
 	# Infer the weights
 	if infer_weights:
-		# Build a DataFrame with indicator data
-		if 'conceptIndicators' in json_model:
-			indicator_dict = {k:dict() for k in json_model['conceptIndicators']}
-			for k,v in json_model['conceptIndicators'].items():
-				indicator_dict[k]['timestamps'] = [y['timestamp'] for y in v['values']]
-				indicator_dict[k]['values'] = [y['value'] for y in v['values']]
-				indicator_dict[k]['resolution'] = v['resolution']
-		elif 'nodes' in json_model:
-			indicator_dict = {node['concept']:dict() for node in json_model['nodes']}
-			for node in json_model['nodes']:
-				indicator_dict[node['concept']]['timestamps'] = [y['timestamp'] for y in node['values']]
-				indicator_dict[node['concept']]['values'] = [y['value'] for y in node['values']]
-				indicator_dict[node['concept']]['resolution'] = node['resolution']
-		else:
-			raise ValueError("Neither 'conceptIndicators', nor 'nodes' found in the model JSON.")
+		weights_inference(json_model=json_model, elements=elements, edges=edges, model_name=model_name)
 
-		df_data = build_df_data(indicator_data=indicator_dict)
-		mid_steps = len(elements)-len(find_heads(model_name))
-		
-		# Infer weights
-		edges = fit_weights(elements=elements, edges=edges, steps_per_unit=mid_steps, 
-							df_data=df_data, method='nnls')
+def weights_inference(json_model:dict, elements:list, edges:dict, model_name:str, cycle_length:float=0):
+	"""This function infers weights from the historical data (provided in json_model JSON file).
+
+	Arguments:
+	- json_model [dict]: a JSON file with CauseMos model information (including historical data)
+	- elements [list]: a list of elements for whose incoming edges to perform weights inference on
+	- edges [dict]: a dictionary with all the edges, where the key is a tuple (source, target),
+					and the value is a dictionary storing source, target, 'level-weight', 
+					'trend-weight', and 'polarity' (1 or -1)
+	- model_name [str]: the name of the model Excel spreadsheet
+	- cycle_length [float]: number of time steps per the lowest time unit in historical data
+							(default: 0, to automatically calculate as the number of updateable
+							elements)"""
+
+	df_model = pd.read_excel(model_name).fillna('')
+	if cycle_length==0:
+		cycle_length = df_model.shape[0]-len(find_heads(model_name))
+
+	# Build a DataFrame with indicator data
+	if 'conceptIndicators' in json_model:
+		indicator_dict = {k:dict() for k in json_model['conceptIndicators']}
+		for k,v in json_model['conceptIndicators'].items():
+			indicator_dict[k]['timestamps'] = [y['timestamp'] for y in v['values']]
+			indicator_dict[k]['values'] = [y['value'] for y in v['values']]
+			indicator_dict[k]['resolution'] = v['resolution']
+	elif 'nodes' in json_model:
+		indicator_dict = {node['concept']:dict() for node in json_model['nodes']}
+		for node in json_model['nodes']:
+			indicator_dict[node['concept']]['timestamps'] = [y['timestamp'] for y in node['values']]
+			indicator_dict[node['concept']]['values'] = [y['value'] for y in node['values']]
+			indicator_dict[node['concept']]['resolution'] = node['resolution']
+	else:
+		raise ValueError("Neither 'conceptIndicators', nor 'nodes' found in the model JSON.")
+
+	df_data = build_df_data(indicator_data=indicator_dict)
+	
+	# Infer weights
+	edges = fit_weights(elements=elements, edges=edges, steps_per_unit=cycle_length, 
+						df_data=df_data, method='nnls')
 	update_model(original_model=model_name, updated_model=model_name, edges=edges)
 
 class CauseMosIndicators:
