@@ -302,6 +302,9 @@ def initialize_model(default_model:str,
 		expParam = "experimentParams"
 	else:
 		raise ValueError("experimentParams key not found in the experiment request json!")
+
+	assert "startTime" in expt_info[expParam], "Missing 'startTime' from the projection request JSON"
+	assert "endTime" in expt_info[expParam], "Missing 'endTime' from the projection request JSON"
 	projection_start = pd.Timestamp(expt_info[expParam]["startTime"], unit='ms').strftime('%Y-%m-%d')
 	projection_end = pd.Timestamp(expt_info[expParam]["endTime"], unit='ms').strftime('%Y-%m-%d')
 	
@@ -347,7 +350,7 @@ def initialize_model(default_model:str,
 	element_ID_col = re.findall(r'Element ID[s]?', ';'.join(df_model.columns.tolist()))
 	assert len(element_ID_col)>=1, "Column Element IDs is missing"
 	el_ID_col = element_ID_col[0]
-
+	
 	# Baseline projection number of points
 	num_points = len(CM_data.joint_projection_timeline)
 
@@ -359,19 +362,13 @@ def initialize_model(default_model:str,
 		num_steps = time_units
 
 	# Number of time steps during a single period between two consecutive time points 
-	# (e.g. if monthly resolution)
+	# (e.g. if monthly resolution, how many simulation time steps correspond to one month)
 	if sim_scheme=='seq':
-		cycle_length = num_steps//num_points
+		cycle_length = num_steps//time_units
 	else:
 		cycle_length = 1
-	
-	# projection_timesteps = [date2step(target_date=date_point.strftime('%Y-%m-%d'), 
-	# 									start_date=projection_start,
-	# 									end_date=projection_end,
-	# 									num_steps=num_steps) \
-	# 							for date_point in CM_data.joint_projection_timeline]
 
-	projection_timesteps = [i*cycle_length for i in range(len(CM_data.joint_projection_timeline)+1)]
+	projection_timesteps = [j*cycle_length for j in range(len(CM_data.joint_projection_timeline)+1)]
 
 	# A dictionary for storing aggregated constraints for each element
 	cn_agg_means = dict()
@@ -415,10 +412,12 @@ def initialize_model(default_model:str,
 		
 		# aggregate data if resolution is too granular
 		timesteps_slice = projection_timesteps[:len(data_array)]
+
+
 		#data_sliced = data_array[:len(projection_timesteps)]
 		data_sliced = data_array[:len(timesteps_slice)]
 
-		data_aggregation = {s:[] for s in set(timesteps_slice)}
+		data_aggregation = {s:[] for s in sorted(set(timesteps_slice))}
 		for s,v in zip(timesteps_slice, data_sliced):
 			data_aggregation[s].append(v)
 		data_means = {j:np.nanmean(v) for j,v in data_aggregation.items() if len(v)>0}
@@ -441,8 +440,6 @@ def initialize_model(default_model:str,
 		discrete_array = np.where(discrete_array>max_level, max_level, discrete_array)
 		discrete_array = np.where(discrete_array<0, 0, discrete_array)
 
-		
-
 		if element in CM_data.head_nodes:
 			freq = CM_data.frequencies[element]
 			if freq=='year':
@@ -459,11 +456,18 @@ def initialize_model(default_model:str,
 												levels=levels, max_level=max_level,
 												bottom_padding=bottom_padding, 
 												offset=offset, timesteps=timesteps_reduced)
+			
 			df_model.loc[i,scenario_vs_initial+' 0'] = initial_string
 
 		else:
 			if element in cn_agg_means:
-				toggle_pairs = [(projection_timesteps[s],int(np.max([np.min([np.ceil((v-lb)*levels/(ub-lb))+bottom_padding,max_level]),0]))) \
+				# toggle_pairs = []
+				# for s,v in cn_agg_means[element].items():
+				# 	if s==0:
+				# 		continue
+				# 	toggle_value = int(np.max([np.min([np.ceil((v-lb)*levels/(ub-lb))+bottom_padding,max_level]),0]))
+				# 	toggle_pairs.append((s,toggle_value))
+				toggle_pairs = [(s,int(np.max([np.min([np.ceil((v-lb)*levels/(ub-lb))+bottom_padding,max_level]),0]))) \
 					for s,v in cn_agg_means[element].items() if s!=0]
 				toggle_string_list = ["{0}[{1}]".format(v,s) for s,v in sorted(toggle_pairs, key=lambda x: x[0])]
 			else:
@@ -641,7 +645,7 @@ def fit_weights(elements, edges, df_data, steps_per_unit:int, method:str='nnls',
 								 'trend-weight':edges[(s,target)]['trend-weight'],
 								 'polarity':edges[(s,target)]['polarity']}
 
-
+		print(target, inferred)
 	return edges_dict
 
 def create_model(model_json:str, model_name:str='model.xslx', infer_weights:bool=True, default_level:int=15,
@@ -677,6 +681,7 @@ def create_model(model_json:str, model_name:str='model.xslx', infer_weights:bool
 									 'Regulator Level',
 									 'Evidence',
 									 'Initial 0'])
+
 	if 'weights' in json_model['edges']:
 		edges = {(x['source'],x['target']):{'source':x['source'], 'target':x['target'],
 									   'level-weight':x['weights'][0], 'trend-weight':x['weights'][1],
@@ -758,6 +763,7 @@ def weights_inference(json_model:dict, elements:list, edges:dict, model_name:str
 	# Infer weights
 	edges = fit_weights(elements=elements, edges=edges, steps_per_unit=cycle_length, 
 						df_data=df_data, method='nnls')
+	
 	update_model(original_model=model_name, updated_model=model_name, edges=edges)
 
 class CauseMosIndicators:
