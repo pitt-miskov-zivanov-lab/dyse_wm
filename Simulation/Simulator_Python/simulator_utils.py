@@ -544,8 +544,8 @@ def build_df_data(indicator_data:dict):
 	return df    
 
 
-def fit_weights(elements, edges, df_data, steps_per_unit:int, method:str='nnls', 
-				delay:dict=None, fixed_edges:dict=dict()):
+def fit_weights(elements, edges, df_data, steps_per_unit:int, method:str='linear', 
+				delay:dict=None, fixed_edges:dict=dict(), min_weight:float=0.01):
 	"""This function returns dictionary edges_dict with fitted weights where possible,
 	and input weights otherwise.
 
@@ -554,50 +554,85 @@ def fit_weights(elements, edges, df_data, steps_per_unit:int, method:str='nnls',
 								  'level-weight':level_weight,
 								  'trend-weight':trend_weight,
 								  'polarity': edge_polarity}}"""
+
+
+	# Ascertain weights fitting method is supported
+	assert method.lower() in ['nnls','linear','lasso'], "Method {0} unknown! Select a method from \{nnls, linear, lasso\}".format(method)
+	method = method.lower()
+
+	# Initialize edges_dict dictionary to store the inferred weights and return them
 	edges_dict = dict()
+
+	# If no delays on interactions are provided, initialize with default delay of 1 time step for all
+	# NOTE: these delays are target-oriented, i.e. they only tell you how much later will the target
+	# be updated
 	if delay is None:
 		delay = {el:1 for el in elements}
+
+	# Iterate over target elements
 	for target in elements:
 		sources = [e['source'] for e in edges.values() if e['target']==target]
 		if len(sources)==0:
 			continue
 		polarities = np.array([e['polarity'] for e in edges.values() if e['target']==target]*2).reshape(-1,1)
 		try:
+			# Attempt at extracting overlapping historical level and trend values to infer weights
+			# This first phase is only inferring regulation types
+
+			# Build level-based features
 			X_level = np.concatenate([discretize(df_data[:-delay[target]][s].values.reshape(-1,1)) for s in sources],axis=1)
 			X_level_reg = (X_level[:-1] + X_level[1:]) * steps_per_unit / 2.
+
+			# Build trend-based features
 			X_trend = X_level[1:-delay[target],:]-X_level[:-delay[target]-1,:]
 			X_trend = np.concatenate([X_trend[0,:].reshape(1,-1), X_trend], axis=0)
-			#X = np.concatenate([X_level[:-delay[target],:], X_trend], axis=1)
+
+			# Join level-based and trend-based features
 			X = np.concatenate([X_level_reg, X_trend], axis=1)
+
+			# Apply polarities
 			X = X * np.dot(np.ones((X.shape[0],1)),polarities.T)
+
+			# Build discretized output values
 			y = discretize(df_data[delay[target]:][target].values).reshape(-1,1)
 			y_update = y[1:,:]-y[:-1,:]
+
+			# Join X and y
 			data4fit = np.concatenate([y_update.reshape(-1,1),X], axis=1)
+
+			# Remove NaNs (rows with missing values)
 			data4fit = cut_NaNs(data4fit, axis=0)
+
+			# Calculate correlations to infer regulation types
+			corr = np.corrcoef(data4fit.T)[0,1:]
+			
+			# Split the outputs from the features
 			y_update_cut, X_cut = data4fit[:,0].reshape(-1), data4fit[:,1:]
 
-			if method=='nnls':
-				fit_values = nnls(A=X_cut, b=y_update_cut)[0]
-			elif method=='linear':
-				LR = LinearRegression()
-				fit_values = LR.fit(X=X_cut, y=y_update_cut).coef_
-			elif method=='lasso':
-				LASSO = Lasso()
-				fit_values = LASSO.fit(X=X_cut, y=y_update_cut).coef_
-			else:
-				raise ValueError("Method {0} unknown! Select a method from \{nnls, linear, lasso\}".format(method))
+			# if method=='nnls':
+			# 	fit_values = nnls(A=X_cut, b=y_update_cut)[0]
+			# elif method=='linear':
+			# 	LR = LinearRegression()
+			# 	fit_values = LR.fit(X=X_cut, y=y_update_cut).coef_
+			# elif method=='lasso':
+			# 	LASSO = Lasso()
+			# 	fit_values = LASSO.fit(X=X_cut, y=y_update_cut).coef_
+			
 			inferred = True
 		except:
 			inferred = False
-			fit_values = [edges[(s,target)]['level-weight'] for s in sources]\
-						+[edges[(s,target)]['trend-weight'] for s in sources]
+			# fit_values = [edges[(s,target)]['level-weight'] for s in sources]\
+			# 			+[edges[(s,target)]['trend-weight'] for s in sources]
+
+			corr = np.zeros(2*len(sources))
 
 		# Reiterate fitting for inferred regulations types
 		if inferred:
 			regulation_types = dict()
 			selected_idx = []
 			for i,s in enumerate(sources):
-				if fit_values[i] > fit_values[i+len(sources)]:
+				# if fit_values[i] > fit_values[i+len(sources)]:
+				if corr[i] > corr[i+len(sources)] and corr[i]>0:
 					regulation_types[(s,target)] = 'level-based'
 					selected_idx.append(i)
 				else:
@@ -618,6 +653,7 @@ def fit_weights(elements, edges, df_data, steps_per_unit:int, method:str='nnls',
 					fit_selected_values = LASSO.fit(X=X2[1:], y=y_update_cut).coef_
 				else:
 					raise ValueError("Method {0} unknown! Select a method from \{nnls, linear, lasso\}".format(method))
+				fit_selected_values = np.where(fit_selected_values>0, fit_selected_values, min_weight)
 				inferred = True
 			except:
 				fit_selected_values = [edges[(s,target)]['level-weight'] for s in sources]\
@@ -645,7 +681,6 @@ def fit_weights(elements, edges, df_data, steps_per_unit:int, method:str='nnls',
 								 'trend-weight':edges[(s,target)]['trend-weight'],
 								 'polarity':edges[(s,target)]['polarity']}
 
-		print(target, inferred)
 	return edges_dict
 
 def create_model(model_json:str, model_name:str='model.xslx', infer_weights:bool=True, default_level:int=15,
