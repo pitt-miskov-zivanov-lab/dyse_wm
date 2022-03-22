@@ -422,13 +422,25 @@ def initialize_model(default_model:str,
 			data_aggregation[s].append(v)
 		data_means = {j:np.nanmean(v) for j,v in data_aggregation.items() if len(v)>0}
 
+		# Initialize clamp Boolean variable to mark if the element has been clamped for projections
+		clamped = False
 		for cnstr in expt_info[expParam]['constraints']:
 			cn_agg = {j:[] for j in range(num_steps)}
 			if cnstr['concept']==element:
+				# Check if clamped
+				if len(cnstr['values'])>0:
+					clamped = True
 				for c1 in cnstr['values']:
 					if c1['step']*cycle_length<num_steps:
 						cn_agg[c1['step']*cycle_length].append(c1['value'])
+
 			cn_agg_means[element] = {j:np.nanmean(v) for j,v in cn_agg.items() if len(v)>0}
+			if clamped and len(cn_agg_means[element])>0:
+				clamp_start = np.nanmin(list(cn_agg_means[element].keys()))
+			else:
+				clamp_start = np.nan
+			if not np.isnan(clamp_start):
+				data_means = {k:v for k,v in data_means.items() if k<clamp_start}
 			for j, v in cn_agg_means[element].items():
 				data_means[j] = v
 		
