@@ -212,6 +212,8 @@ def fill_nan(A):
 	'''
 	interpolate to fill nan values
 	'''
+	if len(A)<=1:
+		return A
 	inds = np.arange(A.shape[0])
 	good = np.where(np.isfinite(A))
 	f = interpolate.interp1d(inds[good], A[good],bounds_error=False)
@@ -324,7 +326,8 @@ def initialize_model(default_model:str,
 		CM_data.baseline_projection(data=CM_data.indicators,
 									time_series=CM_data.time_series, 
 									history_start_date=JH[0], 
-									history_end_date=np.nanmin([JH[-1], pd.Timestamp(projection_start)]), 
+									history_end_date=JH[-1],
+									#history_end_date=np.nanmin([JH[-1], pd.Timestamp(projection_start)]), 
 									history_timelines=CM_data.history_timelines,
 									projection_start_date=projection_start,
 									projection_end_date=projection_end,
@@ -407,12 +410,12 @@ def initialize_model(default_model:str,
 			top_padding = 10
 			levels -= 10
 		
-		# slice the projections
-		data_array = CM_data.baseline_projections[element][projection_start:projection_end]['mean'].values
+		# Slice the projections
+		data_array = CM_data.stat_forecast_slice[element]['mean'].values
+		#data_array = CM_data.baseline_projections[element][projection_start:projection_end]['mean'].values
 		
-		# aggregate data if resolution is too granular
+		# Aggregate data if resolution is too granular
 		timesteps_slice = projection_timesteps[:len(data_array)]
-
 
 		#data_sliced = data_array[:len(projection_timesteps)]
 		data_sliced = data_array[:len(timesteps_slice)]
@@ -443,6 +446,7 @@ def initialize_model(default_model:str,
 				data_means = {k:v for k,v in data_means.items() if k<clamp_start}
 			for j, v in cn_agg_means[element].items():
 				data_means[j] = v
+
 		
 		data_array_reduced = np.array([v for s,v in sorted(data_means.items(), key=lambda x: x[0])])
 		timesteps_reduced = np.array([s for s,v in sorted(data_means.items(), key=lambda x: x[0])])
@@ -555,7 +559,6 @@ def build_df_data(indicator_data:dict):
 		df[k] = df.apply(lambda x: np.nanmean(agg_dict[x['Date']]), axis=1)
 	return df    
 
-
 def fit_weights(elements, edges, df_data, steps_per_unit:int, method:str='linear', 
 				delay:dict=None, fixed_edges:dict=dict(), min_weight:float=0.01):
 	"""This function returns dictionary edges_dict with fitted weights where possible,
@@ -620,22 +623,9 @@ def fit_weights(elements, edges, df_data, steps_per_unit:int, method:str='linear
 			
 			# Split the outputs from the features
 			y_update_cut, X_cut = data4fit[:,0].reshape(-1), data4fit[:,1:]
-
-			# if method=='nnls':
-			# 	fit_values = nnls(A=X_cut, b=y_update_cut)[0]
-			# elif method=='linear':
-			# 	LR = LinearRegression()
-			# 	fit_values = LR.fit(X=X_cut, y=y_update_cut).coef_
-			# elif method=='lasso':
-			# 	LASSO = Lasso()
-			# 	fit_values = LASSO.fit(X=X_cut, y=y_update_cut).coef_
-			
 			inferred = True
 		except:
 			inferred = False
-			# fit_values = [edges[(s,target)]['level-weight'] for s in sources]\
-			# 			+[edges[(s,target)]['trend-weight'] for s in sources]
-
 			corr = np.zeros(2*len(sources))
 
 		# Reiterate fitting for inferred regulations types
@@ -643,7 +633,6 @@ def fit_weights(elements, edges, df_data, steps_per_unit:int, method:str='linear
 			regulation_types = dict()
 			selected_idx = []
 			for i,s in enumerate(sources):
-				# if fit_values[i] > fit_values[i+len(sources)]:
 				if corr[i] > corr[i+len(sources)] and corr[i]>0:
 					regulation_types[(s,target)] = 'level-based'
 					selected_idx.append(i)
@@ -675,11 +664,11 @@ def fit_weights(elements, edges, df_data, steps_per_unit:int, method:str='linear
 		for i,s in enumerate(sources):
 			if inferred:
 				if regulation_types[(s,target)]=='level-based':
-					w_level = int(fit_selected_values[i]*100000.)/100000
+					w_level = max([int(fit_selected_values[i]*100000.)/100000, min_weight])
 					w_trend = 0
 				elif regulation_types[(s,target)]=='trend-based':
 					w_level = 0
-					w_trend = int(fit_selected_values[i]*100000.)/100000
+					w_trend = max([int(fit_selected_values[i]*100000.)/100000, min_weight])
 				else:
 					w_level = 0
 					w_trend = 0.5
@@ -688,12 +677,25 @@ def fit_weights(elements, edges, df_data, steps_per_unit:int, method:str='linear
 										 'trend-weight':w_trend,
 										 'polarity':polarities[i][0]}
 			else:
+				if edges[(s,target)]['level-weight']<min_weight and \
+					edges[(s,target)]['trend-weight']<min_weight:
+					edges[(s,target)]['trend-weight'] = min_weight
 				edges_dict[(s,target)] = {'source':s, 'target':target,
 								 'level-weight':edges[(s,target)]['level-weight'],
 								 'trend-weight':edges[(s,target)]['trend-weight'],
 								 'polarity':edges[(s,target)]['polarity']}
 
 	return edges_dict
+
+def name_variable(name:str):
+	"""This function edits variable name to make it conform to DySE specifications:
+	- it replaces '/' with '___'
+	- it replaces ' ' with '__'
+	- it adds '_' in front of the variable name if it starts with a digit"""
+	new_name = name.replace('/','___').replace(' ','__')
+	if re.match(r'^\d', new_name):
+		new_name = '_'+str(new_name)
+	return new_name
 
 def create_model(model_json:str, model_name:str='model.xslx', infer_weights:bool=True, default_level:int=15,
 				 default_trend_weight:float=0.5, default_level_weight:float=0.0):
@@ -760,8 +762,7 @@ def create_model(model_json:str, model_name:str='model.xslx', infer_weights:bool
 	df_model['Spontaneous Behavior'] = ['None']*len(elements)
 	df_model['Levels'] = df_model.apply(lambda x: lvl_dict[x['Element IDs']], axis=1)
 	df_model['Initial 0'] = default_level
-	df_model['Element Name'] = df_model.apply(lambda x: \
-											  x['Element IDs'].replace('/','___').replace(' ','__'), axis=1)
+	df_model['Element Name'] = df_model.apply(lambda x: name_variable(x['Element IDs']), axis=1)
 	df_model['Variable'] = df_model['Element Name']
 	df_model.to_excel(model_name,index=False)
 		
@@ -827,6 +828,7 @@ class CauseMosIndicators:
 		self.baseline_projections = None
 		self.grid_data = None
 		self.joint_projection_timeline = []
+		self.stat_forecast_slice = None
 
 	def find_freq(self, times, values):
 		"""This function determines temporal resolution of a time series.
@@ -1088,9 +1090,9 @@ class CauseMosIndicators:
 				hist_start, hist_end = np.nanmax(starts), np.nanmin(ends)   
 			elif combination_method=='union':
 				hist_start, hist_end = np.nanmin(starts), np.nanmax(ends)
-			if hist_end>=self.projection_start:
-				closed_arg = 'left'
-				hist_end = self.projection_start
+			# if hist_end>=self.projection_start:
+			# 	closed_arg = 'left'
+			# 	hist_end = self.projection_start
 			return pd.date_range(hist_start, hist_end, freq=freq, closed=closed_arg)
 		return None
 
@@ -1107,7 +1109,6 @@ class CauseMosIndicators:
 		- history_timelines [dict]: dictionary containing historical timelines for each element
 		- projection_start_date [pandas.Timestamp]: start date
 		- projection_end_date [pandas.Timestamp]: end date
-		- num_points [int]: number of projected datapoints
 		- freq [list]: list of strings representing temporal resolution of data for each variable
 
 		
@@ -1115,7 +1116,7 @@ class CauseMosIndicators:
 		- self.baseline_projections [dict]: dictionary with the same structure as data dictionary
 		- self.joint_projection_timeline [pd.DateIndex]: date range for the joint projection timeline"""
 		
-		
+		# Process history/projection start/end date
 		if type(history_start_date)==str:
 			if re.match(r'\d{4}\-\d{2}\-\d{2}',history_start_date):
 				history_start_date = pd.to_datetime(pd.Timestamp(history_start_date),unit='ms')
@@ -1137,11 +1138,12 @@ class CauseMosIndicators:
 			else:
 				projection_end_date = pd.to_datetime(projection_end_date,unit='ms')
 
-		
+		# Fix seasonality parameters
 		seasonality_dict = {'MS':12, 'AS':None, 'D':7, 'W':52, 'H':24, 'M':None, 'S': None,
 						   'L': None, 'U':None, 'N':None}
 		seasonality_type = 'add'
-		
+
+		# Fix frequency arguments
 		freq_dict = {'year':'AS', 'month':'MS', 'week':'W', 'day':'D', 'hour':'H', 'minute':'M',
 				   'second':'S', 'millisecond':'L', 'microsecond':'U', 'nanosecond':'N'}
 		freq_list = ['AS','MS','W','D','H','M','S','L','U','N']
@@ -1149,14 +1151,17 @@ class CauseMosIndicators:
 		freq_idx = np.max([freqs_type[freq_dict[v]] for k,v in freq.items()])
 		
 		# Constructing timelines
-		joint_proj_timeline = pd.date_range(start=projection_start_date,end=projection_end_date,freq=freq_list[freq_idx])
+		joint_proj_timeline = pd.date_range(start=projection_start_date,
+											end=projection_end_date,
+											freq=freq_list[freq_idx])
 
 		# Projections
 		projections = dict()
 		for k,v in time_series.items():
 			if v is None:
-				projections_timeline = pd.date_range(start=projection_start_date,end=projection_end_date,
-												 freq='MS')
+				projections_timeline = pd.date_range(start=projection_start_date,
+													 end=projection_end_date,
+												 	 freq='MS')
 				num_points = len(projections_timeline)
 				df_projections = pd.DataFrame()
 				df_projections['mean'] = np.ones(num_points)
@@ -1166,7 +1171,8 @@ class CauseMosIndicators:
 				projections[k] = df_projections
 				
 			else:
-				projections_timeline = pd.date_range(start=projection_start_date,end=projection_end_date,
+				projections_timeline = pd.date_range(start=projection_start_date,
+													 end=projection_end_date,
 													 freq=freq_dict[freq[k]])
 				num_points = len(projections_timeline)
 				if verbose:
@@ -1174,7 +1180,7 @@ class CauseMosIndicators:
 				
 				not_nans = np.where(~np.isnan(v))[0]
 				if len(not_nans)==0:
-					projections[k] = np.ones(np.nan)*(len(v)+num_points)
+					projections[k] = np.ones(len(v)+num_points)*np.nan
 				else:    
 					n_start = not_nans[0]
 					n_end = not_nans[-1]
@@ -1187,7 +1193,7 @@ class CauseMosIndicators:
 					else:
 						seasonality_type = 'add'
 						
-					
+					# Build a DataFrame with aligned data
 					df_data = pd.DataFrame()
 					df_data['value'] = np.array(fill_nan(v))
 					df_data.index = history_timelines[k]
@@ -1212,6 +1218,8 @@ class CauseMosIndicators:
 										  out_path='dev_demo', filetype='jpg', dpi=150) 
 		
 		self.baseline_projections = projections 
+		self.stat_forecast_slice = {k:v[joint_proj_timeline[0]:joint_proj_timeline[-1]] \
+									for k,v in projections.items()}
 		self.joint_projection_timeline = joint_proj_timeline  
 
 	def visualize_projections(self, projection, hist_data:pd.DataFrame, k:str, name:str, 
@@ -1260,7 +1268,8 @@ class CauseMosIndicators:
 			os.mkdir(out_path)
 		plt.savefig(os.path.join(out_path,k.split('/')[-1]+"."+filetype), bbox_inches='tight', dpi=dpi)
 
-	def visualize_historical_data(self, hist_data:dict, element:str, name_dict:dict, hist_start, hist_end, proj_start, proj_end, savefile=None):
+	def visualize_historical_data(self, hist_data:dict, element:str, name_dict:dict, 
+									hist_start, hist_end, proj_start, proj_end, savefile=None):
 		"""Visualization of historical data"""
 		fig, ax = plt.subplots()
 		ax.plot(hist_data[element]['timestamps'],hist_data[element]['values'],'k-o',label='Historical data')
