@@ -6,13 +6,10 @@ import re
 import matplotlib.pyplot as plt
 from Simulation.Simulator_Python import simulator_interface as sim
 from Visualization import visualization_interface as viz
-from Translation.model import get_model, get_model_template, get_model_from_delphi
-import seaborn as sns
 from scipy import signal, interpolate
 from scipy.optimize import nnls
 from statsmodels import api as sm
 from sklearn.linear_model import LinearRegression, Lasso, Ridge
-from sklearn.metrics import accuracy_score, mean_squared_error
 from collections import defaultdict
 
 def lag_calc(a,b):
@@ -66,7 +63,10 @@ def parse_nodes_and_edges(model_spreadsheet:str='model.xlsx'):
 			L = reg.split('+')
 			for l in L:
 				if not l.startswith('-') and l!='':
-					weight, reg = l.split('*')
+					try:
+						weight, reg = l.split('*')
+					except:
+						raise ValueError("An asterisk not found in row {0}, in Positive regulation, string: {1}".format(i+1,l))
 					wt, wl = weight.split('&')
 					edges[(reg,it['Element Name'])] = {'source':reg, 'target':it['Element Name'],
 										 'trend-weight':float(wt), 'level-weight':float(wl), 'polarity':+1}
@@ -75,7 +75,10 @@ def parse_nodes_and_edges(model_spreadsheet:str='model.xlsx'):
 		if L!='':
 			for l in L:
 				if not l.startswith('-') and l!='':
-					weight, reg = l.split('*')
+					try:
+						weight, reg = l.split('*')
+					except:
+						raise ValueError("An asterisk not found in row {0}, in Negative regulation, string: {1}".format(i+1,l))
 					wt, wl = weight.split('&')
 					edges[(reg,it['Element Name'])] = {'source':reg, 'target':it['Element Name'],
 										 'trend-weight':float(wt), 'level-weight':float(wl), 'polarity':-1}
@@ -428,6 +431,8 @@ def initialize_model(default_model:str,
 		# Initialize clamp Boolean variable to mark if the element has been clamped for projections
 		clamped = False
 		for cnstr in expt_info[expParam]['constraints']:
+			# Construct a dictionary where key is the simulation step, 
+			# and value is a list of all clamped levels that belong to that step
 			cn_agg = {j:[] for j in range(num_steps)}
 			if cnstr['concept']==element:
 				# Check if clamped
@@ -437,16 +442,18 @@ def initialize_model(default_model:str,
 					if c1['step']*cycle_length<num_steps:
 						cn_agg[c1['step']*cycle_length].append(c1['value'])
 
-			cn_agg_means[element] = {j:np.nanmean(v) for j,v in cn_agg.items() if len(v)>0}
-			if clamped and len(cn_agg_means[element])>0:
-				clamp_start = np.nanmin(list(cn_agg_means[element].keys()))
-			else:
-				clamp_start = np.nan
-			if not np.isnan(clamp_start):
-				data_means = {k:v for k,v in data_means.items() if k<clamp_start}
-			for j, v in cn_agg_means[element].items():
-				data_means[j] = v
-
+				# Construct a dictionary where key is the simulation step, 
+				# and value is average clamped level at that step
+				# Note: we are filtering out empty value lists from cn_agg
+				cn_agg_means[element] = {j:np.nanmean(v) for j,v in cn_agg.items() if len(v)>0}
+				if clamped and len(cn_agg_means[element])>0:
+					clamp_start = np.nanmin(list(cn_agg_means[element].keys()))
+				else:
+					clamp_start = np.nan
+				if not np.isnan(clamp_start):
+					data_means = {k:v for k,v in data_means.items() if k<clamp_start}
+				for j, v in cn_agg_means[element].items():
+					data_means[j] = v
 		
 		data_array_reduced = np.array([v for s,v in sorted(data_means.items(), key=lambda x: x[0])])
 		timesteps_reduced = np.array([s for s,v in sorted(data_means.items(), key=lambda x: x[0])])
@@ -477,12 +484,6 @@ def initialize_model(default_model:str,
 
 		else:
 			if element in cn_agg_means:
-				# toggle_pairs = []
-				# for s,v in cn_agg_means[element].items():
-				# 	if s==0:
-				# 		continue
-				# 	toggle_value = int(np.max([np.min([np.ceil((v-lb)*levels/(ub-lb))+bottom_padding,max_level]),0]))
-				# 	toggle_pairs.append((s,toggle_value))
 				toggle_pairs = [(s,int(np.max([np.min([np.ceil((v-lb)*levels/(ub-lb))+bottom_padding,max_level]),0]))) \
 					for s,v in cn_agg_means[element].items() if s!=0]
 				toggle_string_list = ["{0}[{1}]".format(v,s) for s,v in sorted(toggle_pairs, key=lambda x: x[0])]
@@ -1016,6 +1017,7 @@ class CauseMosIndicators:
 								processed_data[i] = np.nanmean(val_binned[ht])
 						time_series[node['concept']] = fill_nan(processed_data)
 						ts_with_nans[node['concept']] = processed_data
+
 				name_dict = {node['concept']:node['indicator'] \
 							if 'indicator' in node \
 							else None for node in model_dump['nodes']}
@@ -1098,7 +1100,8 @@ class CauseMosIndicators:
 
 	def baseline_projection(self, data:dict, time_series:dict, history_start_date, history_end_date, 
 							history_timelines, projection_start_date, projection_end_date,
-							freq:list, out_path:str='.', visualize:bool=False, verbose:bool=False):
+							freq:list, out_path:str='.', default_initial_level:int=15,
+							visualize:bool=False, verbose:bool=False):
 		"""This function produces baseline projections for the elements given their historical data.
 		
 		Inputs:
@@ -1110,7 +1113,7 @@ class CauseMosIndicators:
 		- projection_start_date [pandas.Timestamp]: start date
 		- projection_end_date [pandas.Timestamp]: end date
 		- freq [list]: list of strings representing temporal resolution of data for each variable
-
+		- default_initial_level [int]: default value for initial level (typically mid level)
 		
 		Outputs:
 		- self.baseline_projections [dict]: dictionary with the same structure as data dictionary
@@ -1180,7 +1183,10 @@ class CauseMosIndicators:
 				
 				not_nans = np.where(~np.isnan(v))[0]
 				if len(not_nans)==0:
-					projections[k] = np.ones(len(v)+num_points)*np.nan
+					df_data = pd.DataFrame()
+					df_data['mean'] = np.ones(num_points)*default_initial_level
+					df_data.index = joint_proj_timeline
+					projections[k] = df_data
 				else:    
 					n_start = not_nans[0]
 					n_end = not_nans[-1]
@@ -1217,9 +1223,14 @@ class CauseMosIndicators:
 										  proj_start=projection_start_date, proj_end=projection_end_date,
 										  out_path='dev_demo', filetype='jpg', dpi=150) 
 		
-		self.baseline_projections = projections 
-		self.stat_forecast_slice = {k:v[joint_proj_timeline[0]:joint_proj_timeline[-1]] \
-									for k,v in projections.items()}
+		self.baseline_projections = projections
+		self.stat_forecast_slice = dict()
+		for k,v in projections.items():
+			try:
+				self.stat_forecast_slice[k] = v[pd.Timestamp(joint_proj_timeline[0]):pd.Timestamp(joint_proj_timeline[-1])]
+			except:
+				print(k,v)
+				self.stat_forecast_slice[k] = v[0:len(joint_proj_timeline)]
 		self.joint_projection_timeline = joint_proj_timeline  
 
 	def visualize_projections(self, projection, hist_data:pd.DataFrame, k:str, name:str, 
